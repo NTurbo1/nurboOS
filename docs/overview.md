@@ -16,4 +16,4 @@ I've started developing this OS as a personal project to learn operating system 
 ## Architecture support
 - x86
 
-[Link to docs README.md](README)
+[Link to docs README.md](README.md)
