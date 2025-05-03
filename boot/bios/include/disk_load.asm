@@ -9,10 +9,7 @@ disk_load:
 
     mov [SECTORS_LEFT], dh  ; Set the inital number of sectors should be read.
 
-    mov ch, 0x00    ; Select cylinder 0
     mov dh, 0x00    ; Select head 0
-    mov cl, 0x02    ; Start reading from 2nd sector (i.e.
-                    ; after the boot sector)
 
 next_group:
     mov di, 5

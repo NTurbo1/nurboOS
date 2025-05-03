@@ -2,8 +2,8 @@
 gdt_start:
 
 gdt_null:      ; the mandatory null descriptor
-    dd 0 x0     
-    dd 0 x0
+    dd 0x0     
+    dd 0x0
 
 gdt_code:      ; the code segment descriptor
     ; base=0x0, limit=0xfffff,

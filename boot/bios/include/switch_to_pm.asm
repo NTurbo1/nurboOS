@@ -2,12 +2,18 @@
 
 ; Switch to protected mode
 switch_to_pm:
+    mov bx, STARTED_SWITCHING_TO_PM_MSG
+    call print_string ; external procedure
+
     cli     ; We must switch off interrupts until we have
             ; set up the protected mode interrupt vector,
             ; otherwise interrupts will run riot.
 
     lgdt [gdt_descriptor]       ; Load our global descriptor table, which defines
                                 ; the protected mode segments (e.g. for code and data)
+
+    mov bx, LOADED_GDT_MSG
+    call print_string
 
     mov eax, cr0                ; To make the switch to protected mode, we set
     or eax, 0x1                 ; the first bit of CR0, a control register
@@ -19,10 +25,18 @@ switch_to_pm:
                                 ; pre-fetched and real-mode decoded instructions, which can
                                 ; cause problems if not flushed.
 
+; Debugging messages
+STARTED_SWITCHING_TO_PM_MSG             db "Started switching to 32-bit Protected Mode", 13, 10, 0
+LOADED_GDT_MSG                          db "Loaded GDT (Global Descriptor Table)", 13, 10, 0
+INITIALIZING_SEGMENT_REGISTERS_IN_PM   db "Initializing segment registers in Protected Mode.", 13, 10, 0
+
 [bits 32]
 
 ; Initialise registers and the stack once in PM.
-init_pm :
+init_pm:
+    mov ebx, INITIALIZING_SEGMENT_REGISTERS_IN_PM
+    call print_string_pm
+
     mov ax, DATA_SEG        ; Now in PM, our old segments are meaningless,
     mov ds, ax              ; so we point our segment registers to the
     mov ss, ax              ; data selectors we defined in our GDT

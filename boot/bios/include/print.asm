@@ -1,21 +1,29 @@
+[bits 16]
+
 ; Prints a string in BIOS. Assumes BX contains the address of the string.   
 print_string: 
+    push bp     ; Some BIOS implementations have a bug that causes register
+                ; BP to be destroyed.   It is advisable to save BP before a call to
+                ; Video BIOS routines on these systems.
     push bx
     push ax
 
     mov ah, 0x0e
 
-    loop_string:
-        cmp byte [bx], 0
-        je end_string
-        mov al, [bx]
-        int 0x10
-        add bx, 1
-        jmp loop_string
-    end_string:
-        pop ax
-        pop bx
-        ret ; print_string returns
+loop_string:
+    cmp byte [bx], 0
+    je end_string
+    mov al, [bx]
+    int 0x10
+    add bx, 1
+    jmp loop_string
+
+end_string:
+    pop ax
+    pop bx
+    pop bp
+
+    ret ; print_string returns
 
 ; Prints 16 bit hex values as a string BIOS. Assumes ax contains the hex number value
 print_hex_16: 
@@ -49,8 +57,6 @@ check_end_of_hex_digit:
     mov bx, HEX_DIGIT_STRING
     call print_string
 
-    call reset_hex_digit_string
-    
     pop bx
     pop ax
     pop si
@@ -58,21 +64,6 @@ check_end_of_hex_digit:
 
 HEX_DIGIT_STRING:
     db "0x0000", 0  
-
-reset_hex_digit_string: ; sets HEX_DIGIT_STRING to "0x0000"
-    push bx
-
-    mov bx, HEX_DIGIT_STRING + 2 ; skip "0x"
-    reset_loop:
-        cmp byte [bx], 0
-        je end_reset
-        mov byte [bx], '0'
-        inc bx
-        jmp reset_loop
-
-    end_reset:
-        pop bx
-        ret ; reset_hex_digit_string returns
 
 print_new_line: ; takes no parameters
     push bx
