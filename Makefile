@@ -34,7 +34,7 @@ TARGET=os_image
 build: $(TARGET)
 
 run: build
-	qemu-system-x86_64 -drive if=floppy,format=raw,file=./$(TARGET)
+	qemu-system-x86_64 -drive format=raw,file=./$(TARGET)
 
 # Creates the os_image
 $(TARGET): $(BIOS_BOOT_LOADER_BIN) $(KERNEL_BIN)
