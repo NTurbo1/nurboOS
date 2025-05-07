@@ -29,8 +29,8 @@
     
     jmp $
 
-%include "./boot/bios/include/print.asm"        
-%include "./boot/bios/include/disk_load.asm"
+%include "./boot/bios/include/16_bit_real_mode/print.asm"        
+%include "./boot/bios/include/16_bit_real_mode/disk_load.asm"
 
 load_pm_code:
     push bx
@@ -103,9 +103,9 @@ dw 0xaa55
 
 SECOND_SECTOR_START:    ; Used for address and padding calculations later.
 
-%include "./boot/bios/include/gdt.asm"
-%include "./boot/bios/include/switch_to_pm.asm"
-%include "./boot/bios/include/print_pm.asm"
+%include "./boot/bios/include/16_bit_real_mode/gdt.asm"
+%include "./boot/bios/include/16_bit_real_mode/switch_to_pm.asm"
+%include "./boot/bios/include/32_bit_protected_mode/print_pm.asm"
 
 [bits 32]
 
