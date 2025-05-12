@@ -1,5 +1,5 @@
-# C cross-compiler
-CC = gcc -m64 -ffreestanding -nostdlib
+# C cross-compiler. Check the docs about how to build a cross compiler.
+CC = x86_64-elf-gcc -ffreestanding 
 
 # Directories
 KERNEL_DIR = kernel
