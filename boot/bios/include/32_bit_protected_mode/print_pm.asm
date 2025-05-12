@@ -84,8 +84,8 @@ set_cursor_location_to_the_next_line:
 
     mov cx, VGA_WIDTH
     xor edx, edx
-    div cx                          ; AX = AX / VGA_WIDTH = the previous row, DX = remainder = the current column  
-    add eax, 1                      ; EAX = previous row + 2 = next row
+    div cx                          ; AX = AX / VGA_WIDTH = the current row, DX = remainder = the current column  
+    add eax, 1                      ; EAX = current row + 1 = next row
     imul eax, VGA_WIDTH             ; EAX = EAX (next row) * VGA_WIDTH = new cursor position (in characters)
 
     ; Now EAX contains the new cursor position in characters.
