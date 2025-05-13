@@ -15,6 +15,14 @@ print_string_pm:
     push eax
     push ebx
 
+    ; Set the registers that will be used in the procedure to 0. 
+    ; Modifying their 8, 16, 32 bit parts causes nasty bugs that 
+    ; hard to fix.
+    ; Can't set EBX to 0 here because I'll use it to iterate through
+    ; the string to be printed and it stores the address of the first
+    ; character of the string.
+    xor eax, eax
+
     call read_cursor_location   
     ; Now AX contains the VGA cursor location in characters (not in bytes)
 

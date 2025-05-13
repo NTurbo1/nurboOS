@@ -1,23 +1,42 @@
+[bits 32]
+
+; Check if CPUID is supported by attempting to flip the ID bit (bit 21) in the FLAGS register. 
+; If we can flip it, CPUID is available.
 check_cpuid:
-    push eax
+    push ebx
+    push ecx
+
+    ; Set the registers that will be used in the procedure to 0. 
+    ; Modifying their 8, 16, 32 bit parts causes nasty bugs that 
+    ; hard to fix.
+    xor ebx, ebx
+    xor ecx, ecx
+
+    mov ebx, CHECKING_CPUID_MSG
+    call print_string_pm
 
     pushfd                              ; Save EFLAGS
-    pushfd                              ; Store EFLAGS
-    xor dword [esp], 0x00200000         ; Invert the ID bit in stored EFLAGS
+    pop eax                             ; EAX = original EFLAGS
+    mov ecx, eax                        ; ECX = copy of original EFLAGS
+    xor eax, 0x00200000                 ; Invert the ID bit (bit 21) in stored EFLAGS
+    push eax
     popfd                               ; Load stored EFLAGS (with ID bit inverted)
-
+    
     pushfd                              ; Store EFLAGS again (ID bit may or may not 
                                         ; be inverted)
 
     pop eax                             ; eax = modified EFLAGS (ID bit may or 
                                         ; may not be inverted)
 
-    xor eax, [esp]                      ; eax = whichever bits were changed
-    popfd                               ; Restore original EFLAGS
-    and eax, 0x00200000                 ; eax = zero if ID bit can't be changed, 
-                                        ; else non-zero
+    xor eax, ecx                        ; eax = whichever bits were changed
+    and eax, 0x00200000                 ; eax = zero if ID bit can't be changed -> CPUID is not supported :(, 
+                                        ; else non-zero -> CPUID is supported :)
 
-    pop eax
+    push ecx
+    popfd                               ; Restore original EFLAGS
+
+    pop ecx
+    pop ebx
     ret                                 ; returns from check_cpuid.
 
 ; TODO: Explore the below notes!
@@ -53,6 +72,7 @@ check_long_mode_supported:
 .noLongMode:
     mov ebx, LONG_MODE_NOT_SUPPORTED  
     call print_string_pm                ; external procedure from print_pm.asm file.
+    jmp $
 
 .return:
     pop edx
@@ -62,5 +82,6 @@ check_long_mode_supported:
     ret
 
 ; Debugging messages
-LONG_MODE_NOT_SUPPORTED db "64-bit Long Mode is not supported :(", 13, 10, 0
-LONG_MODE_SUPPORTED db "64-bit Long Mode is supported :)", 13, 10, 0
+LONG_MODE_NOT_SUPPORTED db "64-bit Long Mode is not supported :(", 0
+LONG_MODE_SUPPORTED db "64-bit Long Mode is supported :)", 0
+CHECKING_CPUID_MSG db "Checking CPUID...", 0

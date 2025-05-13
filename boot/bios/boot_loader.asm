@@ -23,9 +23,9 @@
     ; Loads code necessary for switching Protected Mode (GDT, print in PM, etc.)
     call load_pm_code
 
-    call load_kernel    
+    ; call load_kernel    
 
-    call switch_to_pm   ; We never return from here
+    call switch_to_pm   ; It switches to long mode right after switching to protected mode successfully.
     
     jmp $
 
@@ -41,7 +41,7 @@ load_pm_code:
     call print_string
 
     mov bx, SECOND_SECTOR_START
-    mov dh, 1 
+    mov dh, 2 
     mov dl, [BOOT_DRIVE]
 
     mov ch, 0x00    ; Select cylinder 0
@@ -88,7 +88,7 @@ KERNEL_OFFSET equ 0x1000
 ; Global variables
 BOOT_DRIVE              db 0
 
-; Debuggin messages
+; ===================================================== DEBUGGING MESSAGES =======================================================
 REAL_MODE_MSG           db "Started in 16-bit Real Mode", 13, 10, 0 
 LOADING_KERNEL_MSG      db "Loading kernel into memory...", 13, 10, 0
 LOADING_PM_CODE_MSG     db "Loading Protected Mode Code...", 13, 10, 0
@@ -114,17 +114,50 @@ BEGIN_PM:
     mov ebx, PROTECTED_MODE_MSG
     call print_string_pm
 
-    call KERNEL_OFFSET
+    ; call KERNEL_OFFSET
+
+    call switch_to_lm
 
     jmp $
 
-; Global variables
-PROTECTED_MODE_MSG      db "Switched to 32-bit Proected Mode!", 13, 10, 0
+; ===================================================== DEBUGGING MESSAGES =======================================================
+PROTECTED_MODE_MSG      db "Switched to 32-bit Proected Mode!", 0
 
-; ==== 2nd sector padding
+; ===================================================== 2ND SECTOR PADDING =======================================================
 times 512 - ($ - SECOND_SECTOR_START) db 0
 
 ; *****************************************************************************************
 ; *****************  END OF THE 2nd SECTOR (2nd 512 bytes of the disk)  ******************
 ; *****************************************************************************************
 
+THIRD_SECTOR_START:    ; Used for address and padding calculations later.
+
+%include "./boot/bios/include/32_bit_protected_mode/check_long_mode.asm"
+%include "./boot/bios/include/32_bit_protected_mode/A20/check_A20.asm"
+
+switch_to_lm:
+    call check_cpuid
+    cmp eax, 0
+    je .no_cpuid
+    call check_long_mode_supported
+    call is_A20_on                          ; It returns when A20 is not set. Otherwise, it enables the Long Mode.
+    ; TODO: Implement enabling A20.
+
+    jmp $                                   ; TODO: Should stay in Protected Mode and continue with 32-bit kernel
+                                            ; if the OS supports 32-bit.
+
+.no_cpuid:
+    mov ebx, CPUID_NOT_AVAILABLE
+    call print_string_pm
+    jmp $                                   ; TODO: Should stay in Protected Mode and continue with 32-bit kernel
+                                            ; if the OS supports 32-bit.
+
+; ===================================================== DEBUGGING MESSAGES =======================================================
+CPUID_NOT_AVAILABLE db "CPUID is not available :(", 0
+
+; ===================================================== 3RD SECTOR PADDING =======================================================
+times 512 - ($ - THIRD_SECTOR_START) db 0
+
+; *****************************************************************************************
+; *****************  END OF THE 3rd SECTOR (3rd 512 bytes of the disk)  ******************
+; *****************************************************************************************
