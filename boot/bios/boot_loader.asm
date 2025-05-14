@@ -41,7 +41,10 @@ load_pm_code:
     call print_string
 
     mov bx, SECOND_SECTOR_START
-    mov dh, 2 
+    mov dh, 5                           ; 5 sectors loaded assuming all the bootloader code fits 5 sectors.  
+                                        ; The sectors are not tracked after the 2nd sector.
+                                        ; Update the number of sectors loaded if you think the bootloader
+                                        ; code exceeds it.
     mov dl, [BOOT_DRIVE]
 
     mov ch, 0x00    ; Select cylinder 0
@@ -83,7 +86,7 @@ load_kernel:
     ret ; returning from load_kernel
 
 ; Global constants
-KERNEL_OFFSET equ 0x1000
+KERNEL_OFFSET equ 0x1000        ; TODO: Should be changed and kernel should be written from scratch in 64 bit mode!
 
 ; Global variables
 BOOT_DRIVE              db 0
@@ -130,23 +133,29 @@ times 512 - ($ - SECOND_SECTOR_START) db 0
 ; *****************  END OF THE 2nd SECTOR (2nd 512 bytes of the disk)  ******************
 ; *****************************************************************************************
 
-THIRD_SECTOR_START:    ; Used for address and padding calculations later.
-
 %include "./boot/bios/include/32_bit_protected_mode/check_long_mode.asm"
 %include "./boot/bios/include/32_bit_protected_mode/A20/check_A20.asm"
+%include "./boot/bios/include/32_bit_protected_mode/paging/setup_paging.asm"
+%include "./boot/bios/include/32_bit_protected_mode/enter_long_mode/GDT64.asm"
+%include "./boot/bios/include/32_bit_protected_mode/enter_long_mode/enter_long_mode.asm"
 
 switch_to_lm:
     call check_cpuid
     cmp eax, 0
-    je .no_cpuid
+    je no_cpuid
     call check_long_mode_supported
-    call is_A20_on                          ; It returns when A20 is not set. Otherwise, it enables the Long Mode.
-    ; TODO: Implement enabling A20.
+    jmp is_A20_on                           ; Jumps to after_A20_is_set if A20 is set eventually. Otherwise, it hangs 
+                                            ; forever.
+after_A20_is_set:
+    call setup_paging                       ; Sets up page tables addresses, identity maps the first 2 megabytes, and
+                                            ; enables PML5 (5 Level Paging) if supported, doesn't otherwise.
 
-    jmp $                                   ; TODO: Should stay in Protected Mode and continue with 32-bit kernel
-                                            ; if the OS supports 32-bit.
+    jmp switch_to_lm_from_pm                ; Sets the LM-bit, enables paging, loads the GDT for Long Mode, and enters
+                                            ; the 64-bit mode.
 
-.no_cpuid:
+    jmp $                                   
+
+no_cpuid:
     mov ebx, CPUID_NOT_AVAILABLE
     call print_string_pm
     jmp $                                   ; TODO: Should stay in Protected Mode and continue with 32-bit kernel
@@ -154,10 +163,3 @@ switch_to_lm:
 
 ; ===================================================== DEBUGGING MESSAGES =======================================================
 CPUID_NOT_AVAILABLE db "CPUID is not available :(", 0
-
-; ===================================================== 3RD SECTOR PADDING =======================================================
-times 512 - ($ - THIRD_SECTOR_START) db 0
-
-; *****************************************************************************************
-; *****************  END OF THE 3rd SECTOR (3rd 512 bytes of the disk)  ******************
-; *****************************************************************************************

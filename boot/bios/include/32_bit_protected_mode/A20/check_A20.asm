@@ -14,18 +14,30 @@ is_A20_on:
                                 ; to the address 0x012345 that would contain 0x112345 (edi)) 
     cmpsd                       ; compare addresses to see if the're equivalent.
     popad
-    jne A20_on                  ; if not equivalent, A20 line is set.
+    jne A20_on                  ; if not equivalent, A20 line is set. Otherwise A20 line is cleared not set.
 
-    mov ebx, A20_IS_NOT_SET
+    mov ebx, A20_IS_NOT_SET_MSG
     call print_string_pm        ; external procedure
-    ret                         ; if equivalent, the A20 line is cleared.
+    jmp enable_A20
 
 A20_on:
-    mov ebx, A20_IS_SET
+    mov ebx, A20_IS_SET_MSG
     call print_string_pm        ; external procedure
 
-    jmp $                       ; TODO: move to the next instruction to enable Long Mode.
+    jmp after_A20_is_set
+
+enable_A20:
+    mov ebx, ENABLING_A20_MSG
+    call print_string_pm        ; external procedure
+
+    mov ebx, GIVE_UP_ENABLING_A20_MSG
+    call print_string_pm        ; external procedure
+
+    jmp $                       ; TODO: Implement enabling the A20 line. If A20 is successfully enabled,
+                                ; then jump to after_A20_is_set.
 
 ; ===================================================== DEBUGGING MESSAGES =======================================================
-A20_IS_NOT_SET db "A20 is not set.", 0
-A20_IS_SET db "A20 is set!", 0
+A20_IS_NOT_SET_MSG db "A20 is not set.", 0
+A20_IS_SET_MSG db "A20 is set!", 0
+ENABLING_A20_MSG db "Enabling the A20 lint...", 0
+GIVE_UP_ENABLING_A20_MSG db "Couldn't enable the A20 line... Give up :(", 0
