@@ -1,5 +1,5 @@
 # C cross-compiler. Check the docs about how to build a cross compiler.
-CC = x86_64-elf-gcc -ffreestanding 
+CC = x86_64-elf-gcc -ffreestanding -mno-red-zone
 
 # Directories
 KERNEL_DIR = kernel
