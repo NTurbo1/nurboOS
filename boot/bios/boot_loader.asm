@@ -23,9 +23,9 @@
     ; Loads code necessary for switching Protected Mode (GDT, print in PM, etc.)
     call load_pm_code
 
-    ; call load_kernel    
+    call load_kernel
 
-    call switch_to_pm   ; It switches to long mode right after switching to protected mode successfully.
+    ; call switch_to_pm   ; It switches to long mode right after switching to protected mode successfully.
     
     jmp $
 
@@ -41,8 +41,8 @@ load_pm_code:
     call print_string
 
     mov bx, SECOND_SECTOR_START
-    mov dh, 5                           ; 5 sectors loaded assuming all the bootloader code fits 5 sectors.  
-                                        ; The sectors are not tracked after the 2nd sector.
+    mov dh, 4                           ; Note: 4 sectors (after the boot sector, which is the 1st sector)
+                                        ; to load assuming all the bootloader code fits 5 sectors.  
                                         ; Update the number of sectors loaded if you think the bootloader
                                         ; code exceeds it.
     mov dl, [BOOT_DRIVE]
@@ -59,42 +59,54 @@ load_pm_code:
     ret     ; returns from load_pm_code.
 
 load_kernel:
-    push bx
-    push cx
-    push dx
+    pusha
 
     mov bx, LOADING_KERNEL_MSG
     call print_string
-    
-    ; Set up parameters for our disk_load routine, so
-    ; that we load the first 15 sectors (excluding
-    ; the boot sector) from the boot disk (i.e. our
-    ; kernel code) to address KERNEL_OFFSET.
-    mov bx, KERNEL_OFFSET
-    mov dh, 20
+
     mov dl, [BOOT_DRIVE]
 
-    mov ch, 0x00    ; Select cylinder 0
-    mov cl, 0x03    ; Start reading from 3rd sector (i.e. after the sector 
-                    ; that stores code for Protected Mode.)
-    call disk_load
+    mov ax, 127                     ; Max # of of sectors can be read at once.
+    mov bx, 0x10
+    mov cx, 0xffff                  ; The final address the data is read to is CX:BX = 0xffff * 16 (0x10) + 0x10 = 
+                                    ; 0xffff0 + 0x10 = 0x100000 - kernel offset address.
 
-    pop dx
-    pop cx
-    pop bx
+    mov di, 5                       ; Start reading from sector 6 (sector indexing starts from 0) assuming the 
+                                    ; bootloader code takes up 5 sectors.
+                                    ; Note: should be updated accordingly as the bootloader size grows.
+.loop:
+    cmp word [KERNEL_SECTORS_LEFT], 127
+    jle .loop.last_load
+    call disk_load_lba       ; Halts if there is a disk loading error.
+    sub [KERNEL_SECTORS_LEFT], ax
+    jmp .loop
+.loop.last_load:
+    mov bx, LOADING_LAST_KERNEL_SECTORS_MSG
+    call print_string
 
+    mov ax, KERNEL_SECTORS_LEFT
+    call disk_load_lba       ; Halts if there is a disk loading error.
+    call print_disk_load_status
+
+.return:
+    mov bx, KERNEL_LOAD_SUCCESS_MSG
+    call print_string
+
+    popa
     ret ; returning from load_kernel
 
 ; Global constants
-KERNEL_OFFSET equ 0x1000        ; TODO: Should be changed and kernel should be written from scratch in 64 bit mode!
-
+KERNEL_OFFSET equ 0x00100000    ; The kernel entry point at the 1st MiB of the physical address.
+KERNEL_SECTORS_LEFT dw 4096         ; Assuming the kernel code size is no bigger than 
+                                    ; 2 MiB = 4096 * 512 (sector size).
+                                    ; Note: should be updated accordingly as the kernel size grows.
+ 
 ; Global variables
 BOOT_DRIVE              db 0
 
-; ===================================================== DEBUGGING MESSAGES =======================================================
-REAL_MODE_MSG           db "Started in 16-bit Real Mode", 13, 10, 0 
-LOADING_KERNEL_MSG      db "Loading kernel into memory...", 13, 10, 0
-LOADING_PM_CODE_MSG     db "Loading Protected Mode Code...", 13, 10, 0
+; ================================ DEBUGGING MESSAGES =====================================
+REAL_MODE_MSG                   db "Started in 16-bit Real Mode", 13, 10, 0 
+LOADING_PM_CODE_MSG             db "Loading Protected Mode Code...", 13, 10, 0
 
 ; Bootsector padding
 times 510 - ($ - $$) db 0
@@ -106,9 +118,14 @@ dw 0xaa55
 
 SECOND_SECTOR_START:    ; Used for address and padding calculations later.
 
+%include "./boot/bios/include/16_bit_real_mode/disk_load_lba.asm"
 %include "./boot/bios/include/16_bit_real_mode/gdt.asm"
-%include "./boot/bios/include/16_bit_real_mode/switch_to_pm.asm"
 %include "./boot/bios/include/32_bit_protected_mode/print_pm.asm"
+
+; ================================ Debugging Messages =====================================
+LOADING_KERNEL_MSG              db "Loading kernel into memory...", 13, 10, 0
+KERNEL_LOAD_SUCCESS_MSG         db "Successfully loaded the kernel!", 13, 10, 0
+LOADING_LAST_KERNEL_SECTORS_MSG db "Loading the last sectors of kernel...", 13, 10, 0
 
 [bits 32]
 
@@ -123,15 +140,19 @@ BEGIN_PM:
 
     jmp $
 
-; ===================================================== DEBUGGING MESSAGES =======================================================
+; =================================== DEBUGGING MESSAGES ========================================
 PROTECTED_MODE_MSG      db "Switched to 32-bit Proected Mode!", 0
 
-; ===================================================== 2ND SECTOR PADDING =======================================================
+; ====================================== 2ND SECTOR PADDING =====================================
 times 512 - ($ - SECOND_SECTOR_START) db 0
 
 ; *****************************************************************************************
 ; *****************  END OF THE 2nd SECTOR (2nd 512 bytes of the disk)  ******************
 ; *****************************************************************************************
+
+THIRD_SECTOR_START:    ; Used for address and padding calculations later.
+
+%include "./boot/bios/include/16_bit_real_mode/switch_to_pm.asm"
 
 %include "./boot/bios/include/32_bit_protected_mode/check_long_mode.asm"
 %include "./boot/bios/include/32_bit_protected_mode/A20/check_A20.asm"
@@ -151,7 +172,7 @@ after_A20_is_set:
                                             ; enables PML5 (5 Level Paging) if supported, doesn't otherwise.
 
     jmp switch_to_lm_from_pm                ; Sets the LM-bit, enables paging, loads the GDT for Long Mode, and enters
-                                            ; the 64-bit mode.
+                                            ; the 64-bit mode. 
 
     jmp $                                   
 
@@ -163,3 +184,10 @@ no_cpuid:
 
 ; ===================================================== DEBUGGING MESSAGES =======================================================
 CPUID_NOT_AVAILABLE db "CPUID is not available :(", 0
+
+; ===================================================== 5th SECTOR PADDING =======================================================
+times 1536 - ($ - THIRD_SECTOR_START) db 0
+
+; *****************************************************************************************
+; *****************  END OF THE 5th SECTOR (5th 512 bytes of the disk)  ******************
+; *****************************************************************************************

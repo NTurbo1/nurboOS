@@ -7,6 +7,7 @@ switch_to_lm_from_pm:
     or eax, 1 << 8                  ; Set the LM-bit which is the 9th bit (bit 8).
     wrmsr                           ; Write to the model specific register.
 
+    ; Print a debugging message.
     mov ebx, SET_LM_BIT_MSG
     call print_string_pm            ; External procedure.
     xor ebx, ebx                    ; Set EBX to 0 in order to not get nasty bugs later.
@@ -16,6 +17,7 @@ switch_to_lm_from_pm:
     or eax, 1 << 31                 ; Set the PG-bit, which is the 32nd bit (bit 31).
     mov cr0, eax                    ; Set control register 0 to the A-register.
 
+    ; Print a debugging message.
     mov ebx, PAGING_ENABLED_MSG
     call print_string_pm            ; External procedure.
     xor ebx, ebx                    ; Set EBX to 0 in order to not get nasty bugs later.

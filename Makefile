@@ -16,8 +16,9 @@ BIOS_BOOT_INCLUDE = $($(BIOS_DIR)/include/%.asm)
 KERNEL_C_SOURCES = $(shell find $(KERNEL_DIR) -name "*.c")
 KERNEL_HEADERS = $(shell find $(KERNEL_DIR) -name "*.h")
 KERNEL_OBJ = $(patsubst $(KERNEL_DIR)/%.c, $(KERNEL_DIR)/%.o, $(KERNEL_C_SOURCES))
-KERNEL_ENTRY_OBJ = $(KERNEL_DIR)/kernel_entry.o
-KERNEL_ENTRY_ASM = $(KERNEL_DIR)/kernel_entry.asm
+KERNEL_INIT_DIR = $(KERNEL_DIR)/init
+KERNEL_INIT_ASM = $(shell find $(KERNEL_INIT_DIR) -name "*.asm")
+KERNEL_INIT_OBJ = $(patsubst $(KERNEL_INIT_DIR)/%.asm, $(KERNEL_INIT_DIR)/%.o, $(KERNEL_INIT_ASM))
 KERNEL_BIN = $(KERNEL_DIR)/kernel.bin
 
 # Drivers
@@ -40,8 +41,8 @@ run: build
 $(TARGET): $(BIOS_BOOT_LOADER_BIN) $(KERNEL_BIN)
 	cat $^ > $(TARGET)
 
-$(KERNEL_BIN): $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ) $(DRIVERS_OBJ)
-	ld -m elf_x86_64 -e main -o $@ -Ttext 0x1000 $^ --oformat binary
+$(KERNEL_BIN): $(KERNEL_INIT_OBJ) $(KERNEL_OBJ) $(DRIVERS_OBJ)
+	x86_64-elf-ld -nostdlib -T $(KERNEL_DIR)/linker.ld -o $@ $^
 
 %.o : %.c $(HEADERS)
 	$(CC) -c $< -o $@ 
@@ -49,8 +50,8 @@ $(KERNEL_BIN): $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ) $(DRIVERS_OBJ)
 $(BIOS_BOOT_LOADER_BIN): $(BIOS_BOOT_LOADER_ASM) $(BIOS_BOOT_INCLUDE) 
 	nasm $< -f bin -o $@
 
-$(KERNEL_ENTRY_OBJ): $(KERNEL_ENTRY_ASM) 
-	nasm $< -f elf64 -o $@
+$(KERNEL_INIT_OBJ): $(KERNEL_INIT_ASM)
+	nasm $^ -f elf64 -o $@
 
 clean:
 	rm -fr $(KERNEL_OBJ) $(KERNEL_ENTRY_OBJ) $(KERNEL_BIN) \

@@ -1,6 +1,7 @@
 ; Ensures that we jump straight into the kernel’s entry function.
-[bits 32]
+[bits 64]
 [extern main]
 
-call main
-jmp $
+kernel_init:
+    call main
+    jmp $
