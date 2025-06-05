@@ -38,14 +38,15 @@ realm64:
     mov fs, ax                      ; Set the F-segment to the A-register.
     mov gs, ax                      ; Set the G-segment to the A-register.
     mov ss, ax                      ; Set the stack segment to the A-register.
-    mov edi, 0xB8000                ; Set the destination index to 0xB8000 
-                                    ; (the VGA (Video Graphics Array) address).
-    mov rax, 0x1F201F201F201F20     ; Set the A-register to 0x1F201F201F201F20 
-                                    ; (white spaces with blue background).
-    mov ecx, 500                    ; Set the C-register to 500.
-    rep stosq                       ; Clear the screen.
-    hlt                             ; Halt the processor.
 
-; ======================================== DEBUGGING MESSAGES ============================================
-SET_LM_BIT_MSG db "Set LM-bit.", 0
-PAGING_ENABLED_MSG db "Paging is enabled!", 0
+    ; mov edi, 0xB8000                ; Set the destination index to 0xB8000 
+    ;                                 ; (the VGA (Video Graphics Array) address).
+    ; mov rax, 0x1F201F201F201F20     ; Set the A-register to 0x1F201F201F201F20 
+    ;                                 ; (white spaces with blue background).
+    ; mov ecx, 500                    ; Set the C-register to 500.
+    ; rep stosq                       ; Clear the screen.
+    ; hlt
+
+    mov rsp, 0x80000                ; give yourself a sane 64-bit stack
+    mov rax, 0xffffffff80000000             ; physical address where you loaded the kernel
+    call rax                         ; or  call rax  if you want to return

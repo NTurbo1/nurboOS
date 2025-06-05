@@ -1,15 +1,5 @@
 [bits 32]
 
-; Constants
-VGA_ADDRESS equ 0xb8000
-WHITE_ON_BLACK equ 0x0f
-VGA_WIDTH equ 80
-VGA_HEIGHT equ 25
-VGA_REGISTER_INDEX_PORT equ 0x3d4
-VGA_REGISTER_DATA_PORT equ 0x3d5
-VGA_CURSOR_LOCATION_HIGH_BYTE_REG equ 0x0e 
-VGA_CURSOR_LOCATION_LOW_BYTE_REG equ 0x0f
-
 ; Prints a null-terminated string pointed to by EBX
 print_string_pm:
     push eax
@@ -140,5 +130,3 @@ update_cursor_location:
     pop ecx
     ret
 
-; Debugging messages
-INSIDE_PRINT_STRING_PM db "Printing in protected mode...", 0

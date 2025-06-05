@@ -1,6 +1,6 @@
 [bits 16]
 
-; Prints a string in BIOS. Assumes BX contains the address of the string.   
+; Prints a string in BIOS in 16 Real Mode. Assumes BX contains the address of the string.   
 print_string: 
     push bp     ; Some BIOS implementations have a bug that causes register
                 ; BP to be destroyed.   It is advisable to save BP before a call to
@@ -25,7 +25,7 @@ end_string:
 
     ret ; print_string returns
 
-; Prints 16 bit hex values as a string BIOS. Assumes ax contains the hex number value
+; Prints 16 bit hex values as a string in BIOS. Assumes ax contains the hex number value
 print_hex_16: 
     push si 
     push ax
@@ -74,5 +74,34 @@ print_new_line: ; takes no parameters
     pop bx
     ret
 
-; Global variables
+print_dx_before_disk_load:  ; takes no params
+    push ax
+    push bx
+
+    mov bx, DX_VALUE_BEFORE_DISK_LOAD
+    call print_string
+    mov ax, dx
+    call print_hex_16
+    call print_new_line
+
+    pop bx
+    pop ax
+
+    ret
+
+print_disk_load_status: ; takes no parameters
+    push bx
+
+    mov bx, DISK_LOAD_STATUS_MESSAGE
+    call print_string
+    call print_hex_16   ; AX contains the status of INT 0x13
+    call print_new_line
+
+    pop bx
+    ret
+ 
+; *************************************************************************************************
+; ************************************** LOCAL VARIABLES *****************************************
+; *************************************************************************************************
 NEW_LINE db 13, 10, 0
+DX_VALUE_BEFORE_DISK_LOAD       db "Value of DX before disk load: ", 0

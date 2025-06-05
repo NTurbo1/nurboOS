@@ -6,6 +6,7 @@ disk_load:
     push dx ; Store DX on stack so later we can recall
             ; how many sectors were requested to be read,
             ; even if it's altered in the meantime
+    push di
 
     mov [SECTORS_LEFT], dh  ; Set the inital number of sectors should be read.
 
@@ -45,6 +46,7 @@ done_loading:
     mov bx, DONE_DISK_LOADING_RETURNING
     call print_string
 
+    pop di
     pop dx 
     pop cx 
     pop bx 
@@ -67,11 +69,7 @@ print_disk_load_status: ; takes no parameters
     pop bx
     ret
   
-; Global variables
+; *************************************************************************************************
+; ************************************** LOCAL VARIABLES *****************************************
+; ************************************************************************************************* 
 SECTORS_LEFT db 0
-DISK_ERROR_MESSAGE db "Disk read error!", 13, 10, 0
-DISK_LOAD_STATUS_MESSAGE db "Disk load status: ", 0
-
-; Debugging messages
-RETRYING_DISK_LOADING db "Retrying disk loading ...", 13, 10, 0
-DONE_DISK_LOADING_RETURNING db "Done disk loading, returning ...", 13, 10, 0

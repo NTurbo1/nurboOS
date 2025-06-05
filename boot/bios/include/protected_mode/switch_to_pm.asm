@@ -25,11 +25,6 @@ switch_to_pm:
                                 ; pre-fetched and real-mode decoded instructions, which can
                                 ; cause problems if not flushed.
 
-; ============================================== DEBUGGING MESSAGES ====================================================== 
-STARTED_SWITCHING_TO_PM_MSG             db "Started switching to 32-bit Protected Mode", 13, 10, 0
-LOADED_GDT_MSG                          db "Loaded GDT (Global Descriptor Table)", 13, 10, 0
-INITIALIZING_SEGMENT_REGISTERS_IN_PM   db "Initializing segment registers in Protected Mode.", 0 ; Printed in Protected Mode
-
 [bits 32]
 
 ; Initialise registers and the stack once in PM.

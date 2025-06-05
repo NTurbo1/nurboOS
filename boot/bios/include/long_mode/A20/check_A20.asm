@@ -35,9 +35,3 @@ enable_A20:
 
     jmp $                       ; TODO: Implement enabling the A20 line. If A20 is successfully enabled,
                                 ; then jump to after_A20_is_set.
-
-; ===================================================== DEBUGGING MESSAGES =======================================================
-A20_IS_NOT_SET_MSG db "A20 is not set.", 0
-A20_IS_SET_MSG db "A20 is set!", 0
-ENABLING_A20_MSG db "Enabling the A20 lint...", 0
-GIVE_UP_ENABLING_A20_MSG db "Couldn't enable the A20 line... Give up :(", 0

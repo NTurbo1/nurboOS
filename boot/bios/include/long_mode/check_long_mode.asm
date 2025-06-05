@@ -12,8 +12,9 @@ check_cpuid:
     xor ebx, ebx
     xor ecx, ecx
 
-    mov ebx, CHECKING_CPUID_MSG
-    call print_string_pm
+    ; Uncomment the below for debugging
+    ; mov ebx, CHECKING_CPUID_MSG
+    ; call print_string_pm
 
     pushfd                              ; Save EFLAGS
     pop eax                             ; EAX = original EFLAGS
@@ -80,8 +81,3 @@ check_long_mode_supported:
     pop eax
 
     ret
-
-; Debugging messages
-LONG_MODE_NOT_SUPPORTED db "64-bit Long Mode is not supported :(", 0
-LONG_MODE_SUPPORTED db "64-bit Long Mode is supported :)", 0
-CHECKING_CPUID_MSG db "Checking CPUID...", 0

@@ -5,8 +5,6 @@ KERNEL_BASE = 0xFFFFFFFF80000000;
 
 OUTPUT_FORMAT(elf64-x86-64)
 
-STARTUP(kernel/init/kernel_entry.o)
-
 SECTIONS
 {
   .text.start KERNEL_BASE : {

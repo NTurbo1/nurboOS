@@ -5,7 +5,8 @@
     mov es, ax
     mov ds, ax
 
-    mov [BOOT_DRIVE], dl
+    mov [BOOT_DRIVE], dl    ; BIOS assigns the disk drive number to DL during boot. So, it's stored 
+                            ; as a constant for later use.
 
     ; Set up the stack
     mov ax, 0x07e0
@@ -17,96 +18,61 @@
     mov bp, sp
     sti                     ; Enable maskable interrupts     mov bp, sp
 
+    ; Debugging message
     mov bx, REAL_MODE_MSG
     call print_string
+    
+    ; Loads the 2nd stage bootloader code into memory
+    call load_2nd_stage
 
-    ; Loads code necessary for switching Protected Mode (GDT, print in PM, etc.)
-    call load_pm_code
+    jmp $   ; TODO: Remove after testing the load_2nd_stage call 
 
     call load_kernel
 
-    ; call switch_to_pm   ; It switches to long mode right after switching to protected mode successfully.
+    call switch_to_pm   ; It switches to long mode right after switching to protected mode successfully.
     
     jmp $
 
-%include "./boot/bios/include/16_bit_real_mode/print.asm"        
-%include "./boot/bios/include/16_bit_real_mode/disk_load.asm"
+%include "./boot/bios/include/utils/bios/print_bios.asm"        
+; %include "./boot/bios/include/16_bit_real_mode/disk_load.asm"
+%include "./boot/bios/include/utils/bios/disk_load_lba.asm"
 
-load_pm_code:
-    push bx
-    push cx
-    push dx
-
-    mov bx, LOADING_PM_CODE_MSG
-    call print_string
-
-    mov bx, SECOND_SECTOR_START
-    mov dh, 4                           ; Note: 4 sectors (after the boot sector, which is the 1st sector)
-                                        ; to load assuming all the bootloader code fits 5 sectors.  
-                                        ; Update the number of sectors loaded if you think the bootloader
-                                        ; code exceeds it.
-    mov dl, [BOOT_DRIVE]
-
-    mov ch, 0x00    ; Select cylinder 0
-    mov cl, 0x02    ; Start reading from 2nd sector (i.e.
-                    ; after the boot sector)
-    call disk_load
-
-    pop dx
-    pop cx
-    pop bx
-
-    ret     ; returns from load_pm_code.
-
-load_kernel:
+load_2nd_stage:
     pusha
 
-    mov bx, LOADING_KERNEL_MSG
+    ; Nullify the registers before usage
+    xor ax, ax
+    xor bx, bx
+    xor cx, cx
+    xor dx, dx
+
+    ; Debugging message
+    mov bx, LOADING_2ND_STAGE_BOOT_LOADER_CODE
     call print_string
 
+    ; Initialize the params to disk_load_lba routine
+    mov ax, SECOND_STAGE_BOOT_SECTORS_COUNT     ; Total number of sectors read                           
+    mov di, 2                                   ; Starts reading from the 2nd sector, which is after the boot sector
+    mov bx, 0                                   ; Offset value 
+    mov cx, 0x7e00                              ; Segment address
+                                                ; The address that the data is loaded is calculated as such:
+                                                ; segment_address (cx) * 16 (0x10) + offset (0)
     mov dl, [BOOT_DRIVE]
 
-    mov ax, 127                     ; Max # of of sectors can be read at once.
-    mov bx, 0x10
-    mov cx, 0xffff                  ; The final address the data is read to is CX:BX = 0xffff * 16 (0x10) + 0x10 = 
-                                    ; 0xffff0 + 0x10 = 0x100000 - kernel offset address.
-
-    mov di, 5                       ; Start reading from sector 6 (sector indexing starts from 0) assuming the 
-                                    ; bootloader code takes up 5 sectors.
-                                    ; Note: should be updated accordingly as the bootloader size grows.
-.loop:
-    cmp word [KERNEL_SECTORS_LEFT], 127
-    jle .loop.last_load
-    call disk_load_lba       ; Halts if there is a disk loading error.
-    sub [KERNEL_SECTORS_LEFT], ax
-    jmp .loop
-.loop.last_load:
-    mov bx, LOADING_LAST_KERNEL_SECTORS_MSG
-    call print_string
-
-    mov ax, KERNEL_SECTORS_LEFT
-    call disk_load_lba       ; Halts if there is a disk loading error.
-    call print_disk_load_status
+    call disk_load_lba
 
 .return:
-    mov bx, KERNEL_LOAD_SUCCESS_MSG
-    call print_string
-
     popa
-    ret ; returning from load_kernel
+    ret     ; returns from load_pm_code.
 
-; Global constants
-KERNEL_OFFSET equ 0x00100000    ; The kernel entry point at the 1st MiB of the physical address.
-KERNEL_SECTORS_LEFT dw 4096         ; Assuming the kernel code size is no bigger than 
-                                    ; 2 MiB = 4096 * 512 (sector size).
-                                    ; Note: should be updated accordingly as the kernel size grows.
- 
-; Global variables
-BOOT_DRIVE              db 0
+; ********************************* BOOT SECTOR DEBUGGING MESSAGES **************************************
+LOADING_2ND_STAGE_BOOT_LOADER_CODE              db "Loading 2nd stage boot loader code...", 13, 10, 0
+REAL_MODE_MSG                                   db "Started in 16-bit Real Mode", 13, 10, 0 
 
-; ================================ DEBUGGING MESSAGES =====================================
-REAL_MODE_MSG                   db "Started in 16-bit Real Mode", 13, 10, 0 
-LOADING_PM_CODE_MSG             db "Loading Protected Mode Code...", 13, 10, 0
+; ************************************** BOOT SECTOR VARIABLES ******************************************
+BOOT_DRIVE          db 0
+
+
 
 ; Bootsector padding
 times 510 - ($ - $$) db 0
@@ -118,14 +84,52 @@ dw 0xaa55
 
 SECOND_SECTOR_START:    ; Used for address and padding calculations later.
 
-%include "./boot/bios/include/16_bit_real_mode/disk_load_lba.asm"
-%include "./boot/bios/include/16_bit_real_mode/gdt.asm"
-%include "./boot/bios/include/32_bit_protected_mode/print_pm.asm"
+load_kernel:
+    pusha
 
-; ================================ Debugging Messages =====================================
-LOADING_KERNEL_MSG              db "Loading kernel into memory...", 13, 10, 0
-KERNEL_LOAD_SUCCESS_MSG         db "Successfully loaded the kernel!", 13, 10, 0
-LOADING_LAST_KERNEL_SECTORS_MSG db "Loading the last sectors of kernel...", 13, 10, 0
+    mov bx, LOADING_KERNEL_MSG
+    call print_string
+
+    mov dl, [BOOT_DRIVE]
+
+    mov ax, MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE
+    mov bx, 0x10
+    mov cx, 0xffff                  ; The final address the data is read to is CX:BX = 0xffff * 16 (0x10) + 0x10 = 
+                                    ; 0xffff0 + 0x10 = 0x100000 - kernel offset address.
+
+    mov di, 5                       ; Start reading from sector 6 (sector indexing starts from 0) assuming the 
+                                    ; bootloader code takes up 5 sectors.
+                                    ; Note: should be updated accordingly as the bootloader size grows.
+.loop:
+    cmp word [KERNEL_SECTORS_LEFT], MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE
+    jle .loop.last_load
+
+    ; Debugging message
+    mov bx, LOADING_NEXT_KERNEL_CHUNK_MSG
+    call print_string
+
+    call disk_load_lba                              ; Halts if there is a disk loading error.
+    mov ax, MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE
+    sub [KERNEL_SECTORS_LEFT], ax
+    add di, MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE
+    jmp .loop
+.loop.last_load:
+    mov bx, LOADING_LAST_KERNEL_SECTORS_MSG
+    call print_string
+
+    mov ax, [KERNEL_SECTORS_LEFT]
+    call disk_load_lba              ; Halts if there is a disk loading error.
+    call print_disk_load_status
+
+.return:
+    mov bx, KERNEL_LOAD_SUCCESS_MSG
+    call print_string
+
+    popa
+    ret ; returning from load_kernel
+
+%include "./boot/bios/include/protected_mode/GDT32.asm"
+%include "./boot/bios/include/utils/print_pm.asm"
 
 [bits 32]
 
@@ -134,14 +138,9 @@ BEGIN_PM:
     mov ebx, PROTECTED_MODE_MSG
     call print_string_pm
 
-    ; call KERNEL_OFFSET
-
     call switch_to_lm
 
     jmp $
-
-; =================================== DEBUGGING MESSAGES ========================================
-PROTECTED_MODE_MSG      db "Switched to 32-bit Proected Mode!", 0
 
 ; ====================================== 2ND SECTOR PADDING =====================================
 times 512 - ($ - SECOND_SECTOR_START) db 0
@@ -152,13 +151,13 @@ times 512 - ($ - SECOND_SECTOR_START) db 0
 
 THIRD_SECTOR_START:    ; Used for address and padding calculations later.
 
-%include "./boot/bios/include/16_bit_real_mode/switch_to_pm.asm"
+%include "./boot/bios/include/protected_mode/switch_to_pm.asm"
 
-%include "./boot/bios/include/32_bit_protected_mode/check_long_mode.asm"
-%include "./boot/bios/include/32_bit_protected_mode/A20/check_A20.asm"
-%include "./boot/bios/include/32_bit_protected_mode/paging/setup_paging.asm"
-%include "./boot/bios/include/32_bit_protected_mode/enter_long_mode/GDT64.asm"
-%include "./boot/bios/include/32_bit_protected_mode/enter_long_mode/enter_long_mode.asm"
+%include "./boot/bios/include/long_mode/check_long_mode.asm"
+%include "./boot/bios/include/long_mode/A20/check_A20.asm"
+%include "./boot/bios/include/long_mode/paging/setup_paging.asm"
+%include "./boot/bios/include/long_mode/enter_long_mode/GDT64.asm"
+%include "./boot/bios/include/long_mode/enter_long_mode/enter_long_mode.asm"
 
 switch_to_lm:
     call check_cpuid
@@ -182,11 +181,11 @@ no_cpuid:
     jmp $                                   ; TODO: Should stay in Protected Mode and continue with 32-bit kernel
                                             ; if the OS supports 32-bit.
 
-; ===================================================== DEBUGGING MESSAGES =======================================================
-CPUID_NOT_AVAILABLE db "CPUID is not available :(", 0
+%include "./boot/bios/include/constants/global_constants.asm"
+%include "./boot/bios/include/constants/messages.asm"
 
-; ===================================================== 5th SECTOR PADDING =======================================================
-times 1536 - ($ - THIRD_SECTOR_START) db 0
+; ================================ THE LAST BOOT LOADER SECTOR PADDING ==================================
+times (SECOND_STAGE_BOOT_SECTORS_COUNT - 2) * SECTOR_BYTES_COUNT - ($ - THIRD_SECTOR_START) db 0
 
 ; *****************************************************************************************
 ; *****************  END OF THE 5th SECTOR (5th 512 bytes of the disk)  ******************

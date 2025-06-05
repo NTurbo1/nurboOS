@@ -15,8 +15,11 @@
 ;     PDT - 0x3000.
 ;     PT - 0x4000.
 setup_paging:
-    mov ebx, SETTING_UP_PAGING_FOR_LONG_MODE_MSG
-    call print_string_pm    ; External procedure
+    pushad
+
+    ; Uncomment the below for debugging
+    ; mov ebx, SETTING_UP_PAGING_FOR_LONG_MODE_MSG
+    ; call print_string_pm    ; External procedure
     xor ebx, ebx            ; Set EBX to 0 to be used properly below. 
 
     ; Clear tables
@@ -60,16 +63,18 @@ setup_paging:
     ;    PML4[511] (because bit 47 = 1) -> PDPT[0] -> PDT[0] -> 2 MiB page at 0x00100000
 
     ; Add new page tables at:
-    ; PML4T at 0x1000  <- already used
-    ; PDPT at 0x2000   <- already used
-    ; PDT at 0x3000    <- already used (for identity map)
+    ; PML4T (512 GiB each) at 0x1000            <- already used
+    ; PDPT (1 GiB each) at 0x2000               <- already used
+    ; PDT (2 MiB each) at 0x3000                <- already used (for identity map)
+    ; PT (4 KiB(page size) each) at 0x4000      <- already used 
+    ; 0x4000 - 0x5000(not included)             <- already used for identity mapping the 1st 2 MiB of memory, which
+    ;                                              referenced by the 1st entry in PDT.
     ; Use new ones at 0x5000, 0x6000
-
     mov edi, 0x1000                     ; PML4T
-    mov dword [edi + 8 * 511], 0x5003   ; PML4[511] -> PDPT_HH at 0x6000
+    mov dword [edi + 8 * 511], 0x5003   ; PML4[511] -> PDPT_HH at 0x5000
 
     mov edi, 0x5000                     ; PDPT_HH
-    mov dword [edi], 0x6003             ; PDPT[0] -> PDT_HH at 0x7000
+    mov dword [edi], 0x6003             ; PDPT[0] -> PDT_HH at 0x6000
 
     mov edi, 0x6000                     ; PDT_HH
     mov dword [edi], 0x00100083         ; Map 2MiB page:
@@ -79,6 +84,10 @@ setup_paging:
     mov eax, cr4                ; Set the A-register to control register 4.
     or eax, 1 << 5              ; Set the PAE-bit, which is the 6th bit (bit 5).
     mov cr4, eax                ; Set control register 4 to the A-register.
+
+    ; Uncomment the below for debugging
+    ; mov ebx, PAE_PAGING_IS_ENABLED_MSG
+    ; call print_string_pm
 
 ; Now paging is set up, but it isn't enabled yet. 
 
@@ -118,10 +127,7 @@ setup_paging:
 ;     xor ebx, ebx                    ; Set EBX to 0 to be used properly below. 
 
 .return:
+    popad
     ret
 
-; ================================== DEBUGGING MESSAGES ====================================
-SETTING_UP_PAGING_FOR_LONG_MODE_MSG db "Setting up Paging for Long Mode...", 0
-ENABLING_PML5_MSG db "Enabling PML5 (5 Level Paging)...", 0
-PML5_ENABLED_MSG db "PML5 (5 Level Paging) is enabled!", 0
-PML5_NOT_SUPPORTED_MSG db "PML5 is not supported!", 0
+

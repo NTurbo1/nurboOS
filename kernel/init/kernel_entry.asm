@@ -2,6 +2,8 @@
 [bits 64]
 [extern main]
 
+global kernel_init
+
 kernel_init:
     call main
     jmp $
