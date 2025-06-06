@@ -36,21 +36,18 @@ disk_load_lba:
     ; dl (disk is expected to be given by bootloader), so it's skipped.
     int 0x13
     jc .disk_error
+    call print_disk_load_status                 ; external routine
+    call print_sectors_read
     
     jmp .return
 
 .disk_error:
-    ; Reinitialize DS (data segment register) because it might get corrupted 
-    ; by BIOS
-    push ax
-    mov ax, 0
-    mov ds, ax
-    pop ax
-
     mov bx, KERNEL_LOAD_DISK_READ_ERROR_MSG 
     call print_string
 
     call print_disk_load_status                 ; external routine
+
+    ; TODO: Repeat the loading until DISK_LOAD_RETRY_ATTEMPTS_LEFT is 0
 
     jmp $
 
@@ -58,8 +55,8 @@ disk_load_lba:
     mov byte [DISK_LOAD_RETRY_ATTEMPTS_LEFT], DISK_LOAD_RETRY_MAX_COUNT  ; Reset the number of retries
     mov bx, LOADED_2ND_STAGE_SUCCESSFULLY
     call print_string
-    popa
 
+    popa
     ret
 
 align 16
@@ -73,9 +70,24 @@ align 16
     dw 0x0000               ; segment                       --> offset +6
     dq 0x0000000000000000   ; LBA                           --> offset +8
 
+print_sectors_read:
+    push ax
+    push bx
+
+    mov ax, [disk_load_lba.dap + 2]
+    call print_hex_16
+    mov bx, SECTORS_ARE_READ
+    call print_string
+
+    pop bx
+    pop ax
+
+    ret
+
 ; ***************************************** LOCAL VARIABLES *******************************************
 DISK_LOAD_RETRY_ATTEMPTS_LEFT   db DISK_LOAD_RETRY_MAX_COUNT
 LOADED_2ND_STAGE_SUCCESSFULLY   db "Successfully loaded the 2nd stage boot loader code!", 13, 10, 0
+SECTORS_ARE_READ                db " sectors are read", 13, 10, 0
 
 ; ***************************************** LOCAL CONSTANTS *******************************************
 DISK_LOAD_RETRY_MAX_COUNT equ 5

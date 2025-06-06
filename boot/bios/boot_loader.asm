@@ -34,7 +34,6 @@
     jmp $
 
 %include "./boot/bios/include/utils/bios/print_bios.asm"        
-; %include "./boot/bios/include/16_bit_real_mode/disk_load.asm"
 %include "./boot/bios/include/utils/bios/disk_load_lba.asm"
 
 load_2nd_stage:
@@ -53,8 +52,8 @@ load_2nd_stage:
     ; Initialize the params to disk_load_lba routine
     mov ax, SECOND_STAGE_BOOT_SECTORS_COUNT     ; Total number of sectors read                           
     mov di, 2                                   ; Starts reading from the 2nd sector, which is after the boot sector
-    mov bx, 0                                   ; Offset value 
-    mov cx, 0x7e00                              ; Segment address
+    mov bx, SECOND_SECTOR_START                              ; Offset value 
+    mov cx, 0                                   ; Segment address
                                                 ; The address that the data is loaded is calculated as such:
                                                 ; segment_address (cx) * 16 (0x10) + offset (0)
     mov dl, [BOOT_DRIVE]
@@ -67,7 +66,7 @@ load_2nd_stage:
 
 ; ********************************* BOOT SECTOR DEBUGGING MESSAGES **************************************
 LOADING_2ND_STAGE_BOOT_LOADER_CODE              db "Loading 2nd stage boot loader code...", 13, 10, 0
-REAL_MODE_MSG                                   db "Started in 16-bit Real Mode", 13, 10, 0 
+REAL_MODE_MSG                                   db "16-bit Real Mode", 13, 10, 0 
 
 ; ************************************** BOOT SECTOR VARIABLES ******************************************
 BOOT_DRIVE          db 0

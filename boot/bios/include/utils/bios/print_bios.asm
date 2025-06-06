@@ -6,7 +6,12 @@ print_string:
                 ; BP to be destroyed.   It is advisable to save BP before a call to
                 ; Video BIOS routines on these systems.
     push bx
-    push ax
+    push ax 
+
+    ; Reinitialize DS (data segment register) because it might get corrupted 
+    ; by BIOS
+    mov ax, 0
+    mov ds, ax
 
     mov ah, 0x0e
 
@@ -105,3 +110,4 @@ print_disk_load_status: ; takes no parameters
 ; *************************************************************************************************
 NEW_LINE db 13, 10, 0
 DX_VALUE_BEFORE_DISK_LOAD       db "Value of DX before disk load: ", 0
+DISK_LOAD_STATUS_MESSAGE        db "Disk load status: ", 0

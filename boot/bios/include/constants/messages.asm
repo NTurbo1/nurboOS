@@ -6,7 +6,6 @@ KERNEL_LOAD_SUCCESS_MSG         db "Successfully loaded the kernel!", 13, 10, 0
 LOADING_LAST_KERNEL_SECTORS_MSG db "Loading the last sectors of kernel...", 13, 10, 0
 LOADING_KERNEL_MSG              db "Loading kernel into memory...", 13, 10, 0
 DISK_ERROR_MESSAGE              db "Disk read error!", 13, 10, 0
-DISK_LOAD_STATUS_MESSAGE        db "Disk load status: ", 0
 RETRYING_DISK_LOADING           db "Retrying disk loading ...", 13, 10, 0
 DONE_DISK_LOADING_RETURNING     db "Done disk loading, returning ...", 13, 10, 0
 KERNEL_LOAD_DISK_READ_ERROR_MSG db "Disk read error during kernel loading with LBA!", 13, 10, 0
