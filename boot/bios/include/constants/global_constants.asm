@@ -5,7 +5,7 @@ SECTOR_BYTES_COUNT                  equ 512         ; Number of bytes in one sec
 SECOND_STAGE_BOOT_SECTORS_COUNT     equ 7           ; Number of sectors loaded after the 1st sector
 KERNEL_OFFSET                       equ 0x00100000  ; The kernel entry point at the 1st MiB of the 
                                                     ; physical address.
-MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE equ 127
+MAX_SECTORS_NUM_CAN_BE_READ_AT_ONCE equ 8 
 
 ; *************************************** VGA CONSTANTS *******************************************
 VGA_ADDRESS                                     equ 0xb8000

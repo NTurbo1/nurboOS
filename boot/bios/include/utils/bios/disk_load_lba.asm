@@ -26,14 +26,13 @@ disk_load_lba:
     xor bx, bx
     xor cx, cx
     xor di, di
+    xor dx, dx
 
 .load:
-    ; Debugging messages
-    call print_dx_before_disk_load
-
     mov si, .dap
     mov ah, 0x42
-    ; dl (disk is expected to be given by bootloader), so it's skipped.
+    mov dl, [BOOT_DRIVE]
+    call print_dx_before_disk_load
     int 0x13
     jc .disk_error
     call print_disk_load_status                 ; external routine
@@ -42,19 +41,17 @@ disk_load_lba:
     jmp .return
 
 .disk_error:
-    mov bx, KERNEL_LOAD_DISK_READ_ERROR_MSG 
+    mov bx, DISK_READ_ERROR_MSG 
     call print_string
 
     call print_disk_load_status                 ; external routine
 
-    ; TODO: Repeat the loading until DISK_LOAD_RETRY_ATTEMPTS_LEFT is 0
+    ; TODO: Repeat the loading until DISK_LOAD_RETRY_ATTEMPTS_LEFT is 0 or the load is successful
 
     jmp $
 
 .return:
     mov byte [DISK_LOAD_RETRY_ATTEMPTS_LEFT], DISK_LOAD_RETRY_MAX_COUNT  ; Reset the number of retries
-    mov bx, LOADED_2ND_STAGE_SUCCESSFULLY
-    call print_string
 
     popa
     ret
@@ -86,8 +83,8 @@ print_sectors_read:
 
 ; ***************************************** LOCAL VARIABLES *******************************************
 DISK_LOAD_RETRY_ATTEMPTS_LEFT   db DISK_LOAD_RETRY_MAX_COUNT
-LOADED_2ND_STAGE_SUCCESSFULLY   db "Successfully loaded the 2nd stage boot loader code!", 13, 10, 0
 SECTORS_ARE_READ                db " sectors are read", 13, 10, 0
+DISK_READ_ERROR_MSG db "Disk read error", 13, 10, 0
 
 ; ***************************************** LOCAL CONSTANTS *******************************************
 DISK_LOAD_RETRY_MAX_COUNT equ 5

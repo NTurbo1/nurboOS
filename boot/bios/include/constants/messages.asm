@@ -8,7 +8,6 @@ LOADING_KERNEL_MSG              db "Loading kernel into memory...", 13, 10, 0
 DISK_ERROR_MESSAGE              db "Disk read error!", 13, 10, 0
 RETRYING_DISK_LOADING           db "Retrying disk loading ...", 13, 10, 0
 DONE_DISK_LOADING_RETURNING     db "Done disk loading, returning ...", 13, 10, 0
-KERNEL_LOAD_DISK_READ_ERROR_MSG db "Disk read error during kernel loading with LBA!", 13, 10, 0
 STARTED_SWITCHING_TO_PM_MSG     db "Started switching to 32-bit Protected Mode", 13, 10, 0
 LOADED_GDT_MSG                  db "Loaded GDT (Global Descriptor Table)", 13, 10, 0
 A20_IS_NOT_SET_MSG              db "A20 is not set.", 0
