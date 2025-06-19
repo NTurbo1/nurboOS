@@ -4,21 +4,12 @@ CC = x86_64-elf-gcc -ffreestanding -mno-red-zone
 # Directories
 KERNEL_DIR = kernel
 DRIVERS_DIR = drivers
-BOOT_DIR = boot
-
-# BIOS
-BIOS_DIR = $(BOOT_DIR)/bios
-BIOS_BOOT_LOADER_BIN = $(BIOS_DIR)/boot_loader.bin
-BIOS_BOOT_LOADER_ASM = $(BIOS_DIR)/boot_loader.asm
-BIOS_BOOT_INCLUDE = $($(BIOS_DIR)/include/%.asm)
+KERNEL_BOOT_DIR = $(KERNEL_DIR)/boot
 
 # Kernel
 KERNEL_C_SOURCES = $(shell find $(KERNEL_DIR) -name "*.c")
 KERNEL_HEADERS = $(shell find $(KERNEL_DIR) -name "*.h")
 KERNEL_OBJ = $(patsubst $(KERNEL_DIR)/%.c, $(KERNEL_DIR)/%.o, $(KERNEL_C_SOURCES))
-KERNEL_INIT_DIR = $(KERNEL_DIR)/init
-KERNEL_INIT_ASM = $(shell find $(KERNEL_INIT_DIR) -name "*.asm")
-KERNEL_INIT_OBJ = $(patsubst $(KERNEL_INIT_DIR)/%.asm, $(KERNEL_INIT_DIR)/%.o, $(KERNEL_INIT_ASM))
 KERNEL_BIN = $(KERNEL_DIR)/kernel.bin
 
 # Drivers
@@ -28,7 +19,7 @@ DRIVERS_OBJ = $(patsubst $(DRIVERS_DIR)/%.c, $(DRIVERS_DIR)/%.o, $(DRIVERS_C_SOU
 
 HEADERS = $(KERNEL_HEADERS) $(DRIVERS_HEADERS)
 
-TARGET=os_image
+TARGET=nurbo_os.iso
 
 .PHONY: run build clean
 
@@ -37,7 +28,7 @@ build: $(TARGET)
 run: build
 	qemu-system-x86_64 -drive format=raw,file=./$(TARGET)
 
-# Creates the os_image
+# Creates the iso file
 $(TARGET): $(BIOS_BOOT_LOADER_BIN) $(KERNEL_BIN)
 	cat $^ > $(TARGET)
 
