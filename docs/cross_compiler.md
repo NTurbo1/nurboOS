@@ -9,8 +9,12 @@ This guide documents the exact steps used to build:
 
 Make sure your system has the following dependencies installed:
 
-```bash
+```
+# Debian based
 sudo apt update && sudo apt install build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo libisl-dev libz-dev
+
+# Fedora
+sudo dnf install gcc gcc-c++ make glibc-devel bison flex gmp-devel libmpc-devel mpfr-devel texinfo isl-devel zlib-devel
 ```
 
 Also make sure you have sufficient disk space (~5–8 GB free).
@@ -31,9 +35,10 @@ tar -xf gcc-15.1.0.tar.xz
 wget https://ftp.gnu.org/gnu/binutils/binutils-2.44.tar.xz
 tar -xf binutils-2.44.tar.xz
 ```
+
 ## 2. Build GCC (Can be skipped)
 ```
-export PREFIX="$HOME/opt/gcc-15.1.0
+export PREFIX="$HOME/opt/gcc-15.1.0"
 
 # Binutils
 cd $HOME/src
@@ -41,7 +46,7 @@ mkdir build-binutils
 cd build-binutils
 ../binutils-2.44/configure --prefix="$PREFIX" --disable-nls --disable-werror
 make -j$(nproc)
-make install
+make install -j$(nproc)
 
 # GCC
 cd $HOME/src
@@ -52,10 +57,12 @@ cd $HOME/src # Returning the main src folder
 
 mkdir build-gcc
 cd build-gcc
-../gcc-15.1.0/configure --prefix="$PREFIX" --disable-nls --enable-languages=c,c++
+# You may need to install gcc-multilib (Debian packages) or glibc-devel.i686, libstdc++-devel.i686 (Fedora packages)
+../gcc-15.1.0/configure --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --enable-multilib 
 make -j$(nproc) # runs pretty long, you can sit back and drink tea :)
-make install
+make install -j$(nproc)
 ```
+
 ## 3. Build the Cross Compiler
 ```
 export PREFIX="$HOME/opt/cross"
@@ -69,9 +76,10 @@ mkdir build-binutils
 cd build-binutils
 ../binutils-2.44/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
 make -j$(nproc)
-make install
+make install -j$(nproc)
 ```
-### GDB
+
+### GDB (Optional)
 It may be worth noting that if you wish to use GDB, and you are running on a different computer architecture than your OS (most common case is developing for ARM on x86_64 or x86_64 on ARM), you need to cross-compile GDB separately. While technically a part of Binutils, it resides in a separate repository.
 
 The protocol for building GDB to target a different architecture is very similar to that of regular Binutils: 
@@ -80,6 +88,7 @@ The protocol for building GDB to target a different architecture is very similar
 make all-gdb
 make install-gdb
 ```
+
 ### Disable Red-Zone (x86_64 specific)
 Create the following file and save it as t-x86_64-elf inside gcc/config/i386/ under your GCC sources.
 ```
@@ -101,6 +110,7 @@ x86_64-*-elf*)
 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h"
 	;;
 ```
+
 ### Build GCC Cross Compiler
 ```
 cd $HOME/src
