@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+__attribute__((noreturn))
 void kernel_main(void) {
     // VGA framebuffer address for text mode (0xb8000)
     volatile uint16_t* video = (uint16_t*)0xB8000;
@@ -13,4 +14,3 @@ void kernel_main(void) {
         __asm__("hlt"); // Halt
     }
 }
-

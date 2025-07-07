@@ -24,7 +24,7 @@ setup_paging:
     xorl %ebx, %ebx              # Set EBX to 0 to be used properly below. 
 
     # Clear tables
-    movl $0x1000 %edi,          # Set the destination index to 0x1000.
+    movl $0x1000, %edi          # Set the destination index to 0x1000.
     movl %edi, %cr3              # Set control register 3 to the destination index.
     xorl %eax, %eax              # Nullify the A-register.
     movl $4096, %ecx             # Set the C-register to 4096.
@@ -39,21 +39,21 @@ setup_paging:
     # Since page table entries are page size (4 KiB) aligned, CPU uses the last 12 bits 
     # (extracted by masking out the last 12 bits by entry & 0xFFFFFFFFFFFFF000) for flag
     # bits to store information about the page. 
-    movl 0x2003, (%edi)         # Set the uint32_t at the destination index to 0x2003.
-    addl 0x1000, %edi           # Add 0x1000 to the destination index.
-    movl 0x3003, (%edi)         # Set the uint32_t at the destination index to 0x3003.
-    addl 0x1000, %edi           # Add 0x1000 to the destination index.
-    movl 0x4003, (%edi)         # Set the uint32_t at the destination index to 0x4003.
-    addl 0x1000, %edi           # Add 0x1000 to the destination index.
+    movl $0x2003, (%edi)         # Set the uint32_t at the destination index to 0x2003.
+    addl $0x1000, %edi           # Add 0x1000 to the destination index.
+    movl $0x3003, (%edi)         # Set the uint32_t at the destination index to 0x3003.
+    addl $0x1000, %edi           # Add 0x1000 to the destination index.
+    movl $0x4003, (%edi)         # Set the uint32_t at the destination index to 0x4003.
+    addl $0x1000, %edi           # Add 0x1000 to the destination index.
 
     # Identity map the first two megabytes
-    movl 0x00000003, %ebx       # Set the B-register to 0x00000003.
-    movl 512, %ecx              # Set the C-register to 512.
+    movl $0x00000003, %ebx       # Set the B-register to 0x00000003.
+    movl $512, %ecx              # Set the C-register to 512.
     
 1:
     movl %ebx, (%edi)
-    addl 0x1000, %ebx           # Add 0x1000 to the B-register.
-    addl 8, %edi                # Add eight to the destination index.
+    addl $0x1000, %ebx           # Add 0x1000 to the B-register.
+    addl $8, %edi                # Add eight to the destination index.
     loop 1b                     # Set the next entry.
 
     # Mapping virtual address 0xFFFFFFFF80000000 (high canonical address) -> physical 0x00100000 (kernel location)
@@ -71,14 +71,14 @@ setup_paging:
     # 0x4000 - 0x5000(not included)             <- already used for identity mapping the 1st 2 MiB of memory, which
     #                                              referenced by the 1st entry in PDT.
     # Use new ones at 0x5000, 0x6000
-    movl 0x1000, %edi                   # PML4T
-    movl 0x5003, (%edi, 8, 511)          # PML4[511] -> PDPT_HH at 0x5000
+    movl $0x1000, %edi                   # PML4T
+    movl $0x5003, 4088(%edi)             # PML4[511] -> PDPT_HH at 0x5000. 4088 = 8 * 511
 
-    movl 0x5000, %edi                   # PDPT_HH
-    movl 0x6003, (%edi)                 # PDPT[0] -> PDT_HH at 0x6000
+    movl $0x5000, %edi                   # PDPT_HH
+    movl $0x6003, (%edi)                 # PDPT[0] -> PDT_HH at 0x6000
 
-    movl 0x6000, (%edi)                 # PDT_HH
-    movl 0x00100083, (%edi)             # Map 2MiB page:
+    movl $0x6000, (%edi)                 # PDT_HH
+    movl $0x00100083, (%edi)             # Map 2MiB page:
                                         # Present | Write | Page Size (2MiB) | addr=0x00100000
 
 # Enable PAE-paging by setting the PAE-bit in the fourth control register (CR4.PAE).

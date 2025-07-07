@@ -37,14 +37,14 @@ GDT64_pointer:
     .quad GDT64
 
 # *************************************** ACCESS BITS ***************************************
-.set PRESENT        1 << 7
-.set NOT_SYS        1 << 4
-.set EXEC           1 << 3
-.set DC             1 << 2
-.set RW             1 << 1
-.set ACCESSED       1 << 0
+.set PRESENT,       1 << 7
+.set NOT_SYS,       1 << 4
+.set EXEC,          1 << 3
+.set DC,            1 << 2
+.set RW,            1 << 1
+.set ACCESSED,      1 << 0
 
 # ************************************** FLAGS BITS *****************************************
-.set GRAN_4K       1 << 7
-.set SZ_32         1 << 6
-.set LONG_MODE     1 << 5
+.set GRAN_4K,       1 << 7
+.set SZ_32,         1 << 6
+.set LONG_MODE,     1 << 5
