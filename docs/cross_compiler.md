@@ -120,7 +120,7 @@ which -- $TARGET-as || echo $TARGET-as is not in the PATH
 
 mkdir build-gcc
 cd build-gcc
-../gcc-15.1.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers --disable-hosted-libstdcxx
+../gcc-15.1.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers --disable-hosted-libstdcxx # Replace --without-headers with --with-sysroot for sysroot support
 make -j$(nproc) all-gcc
 make -j$(nproc) all-target-libgcc
 make -j$(nproc) all-target-libstdc++-v3
